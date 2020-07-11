@@ -1,25 +1,35 @@
 class Boid {
 
-    maxspeed = 4
-    maxForce = 0.05
-    separation = 25
-    sightDistance = 150
-    periphery = PI / 4
-    radius = 3.0
-    normalColor = color(50,50,50)
-    highlightColor = color(0,255,0)
+    MAXSPEED = 3
+    MAXFORCE = 0.1
+    SEPARATION = 30
+    SEPARATION_SQ = sq(this.SEPARATION)
+    PERCEPTION = 150
+    PERCEPTION_SQ = sq(this.PERCEPTION)
+    PERIPHERY = PI / 4
+    RADIUS = 3.0
+    BITERANGE = sqrt(this.RADIUS * 2)
+    NORMALCOLOR = color(50, 50, 50)
+    HIGHLIGHTCOLOR = color(0, 255, 0)
 
     constructor(x, y) {
         this.pos = createVector(x, y)
         this.velocity = createVector(random(-1, 1), random(-1, 1))
         this.velocity.setMag(random(2, 4))
         this.acceleration = p5.Vector.random2D()
-        this.col = this.normalColor
+        this.col = this.NORMALCOLOR
+    }
+
+    run(flock) {
+        this.flock(flock)
+        this.update()
+        this.edges()
+        this.show()
     }
 
     update() {
         this.pos.add(this.velocity)
-        this.velocity.limit(this.maxspeed)
+        this.velocity.limit(this.MAXSPEED)
         this.velocity.add(this.acceleration)
         this.acceleration.mult(0)
     }
@@ -32,18 +42,18 @@ class Boid {
         translate(this.pos.x, this.pos.y)
         rotate(theta)
         beginShape()
-        vertex(0, -this.radius * 2)
-        vertex(-this.radius, this.radius * 2)
-        vertex(this.radius, this.radius * 2)
+        vertex(0, -this.RADIUS * 2)
+        vertex(-this.RADIUS, this.RADIUS * 2)
+        vertex(this.RADIUS, this.RADIUS * 2)
         endShape(CLOSE)
         pop()
     }
 
     edges() {
-        if (this.pos.x < -this.radius) this.pos.x = width + this.radius
-        if (this.pos.y < -this.radius) this.pos.y = height + this.radius
-        if (this.pos.x > width + this.radius) this.pos.x = -this.radius
-        if (this.pos.y > height + this.radius) this.pos.y = -this.radius
+        if (this.pos.x < -this.RADIUS) this.pos.x = width + this.RADIUS
+        if (this.pos.y < -this.RADIUS) this.pos.y = height + this.RADIUS
+        if (this.pos.x > width + this.RADIUS) this.pos.x = -this.RADIUS
+        if (this.pos.y > height + this.RADIUS) this.pos.y = -this.RADIUS
     }
 
     applyForce(force) {
@@ -51,9 +61,6 @@ class Boid {
     }
 
     flock(boids) {
-        // this.applyForce(this.align(boids).mult(alignSlider.value()))
-        // this.applyForce(this.cohesion(boids).mult(cohSlider.value()))
-        // this.applyForce(this.separate(boids).mult(sepSlider.value()))
         this.applyForce(this.align(boids).mult(1.0))
         this.applyForce(this.cohesion(boids).mult(1.0))
         this.applyForce(this.separate(boids).mult(1.5))
@@ -64,8 +71,8 @@ class Boid {
         let steering = createVector()
         for (let other of boids) {
             if (other != this) {
-                const d = dist(this.pos.x, this.pos.y, other.pos.x, other.pos.y)
-                if (d < this.sightDistance) {
+                const d = this.distsq(this.pos.x, this.pos.y, other.pos.x, other.pos.y)
+                if (d < this.PERCEPTION_SQ) {
                     steering.add(other.velocity)
                     total++;
                 }
@@ -74,9 +81,9 @@ class Boid {
         if (total > 0) {
             steering.div(total)
             steering.normalize()
-            steering.mult(this.maxspeed)
+            steering.mult(this.MAXSPEED)
             steering.sub(this.velocity)
-            steering.limit(this.maxForce)
+            steering.limit(this.MAXFORCE)
         }
         return steering
     }
@@ -86,8 +93,8 @@ class Boid {
         let total = 0
         for (let other of boids) {
             if (other != this) {
-                const d = dist(this.pos.x, this.pos.y, other.pos.x, other.pos.y)
-                if (d < this.separation) {
+                const d = this.distsq(this.pos.x, this.pos.y, other.pos.x, other.pos.y)
+                if (d < this.SEPARATION_SQ) {
                     const diff = p5.Vector.sub(this.pos, other.pos)
                     diff.normalize()
                     diff.div(d)
@@ -99,11 +106,11 @@ class Boid {
         if (total > 0) {
             steering.div(total)
         }
-        if (steering.mag() > 0) {
+        if (steering.magSq() > 0) {
             steering.normalize()
-            steering.mult(this.maxspeed)
+            steering.mult(this.MAXSPEED)
             steering.sub(this.velocity)
-            steering.limit(this.maxForce)
+            steering.limit(this.MAXFORCE)
         }
         return steering
     }
@@ -113,8 +120,8 @@ class Boid {
         let total = 0
         for (let other of boids) {
             if (other != this) {
-                const d = dist(this.pos.x, this.pos.y, other.pos.x, other.pos.y)
-                if (d > 0 && d < this.sightDistance) {
+                const d = this.distsq(this.pos.x, this.pos.y, other.pos.x, other.pos.y)
+                if (d > 0 && d < this.PERCEPTION_SQ) {
                     steering.add(other.pos)
                     total++;
                 }
@@ -131,68 +138,68 @@ class Boid {
         return p5.Vector
             .sub(target, this.pos)
             .normalize()
-            .mult(this.maxspeed)
+            .mult(this.MAXSPEED)
             .sub(this.velocity)
-            .limit(this.maxForce)
+            .limit(this.MAXFORCE)
     }
 
     arrive(target) {
         let desired = p5.Vector.sub(target, this.pos)
         let d = desired.mag()
         if (d < 50) {
-            var m = map(d, 0, 100, 0, this.maxspeed / 10)
+            var m = map(d, 0, 100, 0, this.MAXSPEED / 10)
             desired.setMag(m)
         } else {
-            desired.setMag(this.maxspeed / 10)
+            desired.setMag(this.MAXSPEED / 10)
         }
         let steer = p5.Vector.sub(desired, this.velocity)
-        steer.limit(this.maxforce)
+        steer.limit(this.MAXFORCE)
         this.applyForce(steer)
     }
 
     findFood(food) {
         let distance, target
         for (let peace of food) {
-            const d = p5.Vector.dist(this.pos, peace.pos)
-            if(d > 0 && d < this.sightDistance) {
+            const d = this.distsq(this.pos.x, this.pos.y, peace.pos.x, peace.pos.y)
+            if (d > 0 && d < this.PERCEPTION_SQ) {
                 const comparison = p5.Vector.sub(peace.pos, this.pos)
                 const diff = this.angleBetween(comparison, this.velocity)
-                if (diff < this.periphery) {
+                if (diff < this.PERIPHERY) {
                     distance = d
-                    target = peace    
+                    target = peace
                 }
             }
         }
         if (target) {
-            if(distance <= this.radius * 3) {
+            if (distance <= this.BITERANGE) {
                 target.eat()
             } else {
-            this.applyForce(this.seek(target.pos).mult(5.0))
+                this.applyForce(this.seek(target.pos).mult(5.0))
             }
         }
     }
 
     drawView(boids) {
-        const sightDistance = 100
-        const periphery = PI / 4
+        const PERCEPTION = 100
+        const PERIPHERY = PI / 4
 
         for (let other of boids) {
             let comparison = p5.Vector.sub(other.pos, this.pos)
-            let d = p5.Vector.dist(this.pos, other.pos)
-            let diff = this.angleBetween(comparison, this.velocity)
-
-            if (diff < periphery && d > 0 && d < sightDistance) {
-                other.highlight()
+            let d = this.distsq(this.pos.x, this.pos.y, other.pos.x, other.pos.y)
+            if (d > 0 && d < this.PERCEPTION_SQ) {
+                let diff = this.angleBetween(comparison, this.velocity)
+                if (diff < PERIPHERY) {
+                    other.highlight()
+                }
             }
         }
-        // View Drawing
         const currentHeading = this.velocity.heading()
         push()
         translate(this.pos.x, this.pos.y)
         rotate(currentHeading)
         fill(0, 100)
         noStroke()
-        arc(0, 0, sightDistance * 2, sightDistance * 2, -periphery, periphery)
+        arc(0, 0, PERCEPTION * 2, PERCEPTION * 2, -PERIPHERY, PERIPHERY)
         pop()
     }
 
@@ -203,17 +210,22 @@ class Boid {
     }
 
     highlight() {
-        this.col = this.highlightColor
+        this.col = this.HIGHLIGHTCOLOR
         this.inView = 250
-        setTimeout(() => this.unlight(), 50)
+        setTimeout(() => this.unlight(), 80)
     }
-    
+
     unlight() {
-        if ( this.inView < 0 ){
-            this.col = this.normalColor
+        if (this.inView < 0) {
+            this.col = this.NORMALCOLOR
         } else {
-            this.inView -= 10
-            setTimeout(() => this.unlight(), 50)
+            this.inView -= 50
+            setTimeout(() => this.unlight(), 100)
         }
+    }
+
+    /* #### Speed optimizations #### */
+    distsq(x1, y1, x2, y2) {
+        return sq(x1 - x2) + sq(y1 - y2);
     }
 }

@@ -6,12 +6,12 @@ class qt_Rectangle {
         this.h = h
     }
 
-    contains(point) {
+    contains(boid) {
         return (
-            point.x >= this.x - this.w &&
-            point.x <= this.x + this.w &&
-            point.y >= this.y - this.h &&
-            point.y <= this.y + this.h
+            boid.pos.x >= this.x - this.w &&
+            boid.pos.x <= this.x + this.w &&
+            boid.pos.y >= this.y - this.h &&
+            boid.pos.y <= this.y + this.h
         )
     }
 
@@ -24,36 +24,36 @@ class qt_Rectangle {
 }
 
 class Quadtree {
-    constructor(x, y, w, h, n)
-    constructor(rect, n) {
-        if (!rect instanceof qt_Rectangle) {
-            this.boundary = new qt_Rectangle(x, y, w, h)
+    constructor(x, y, w, h, n) {
+        if (x instanceof qt_Rectangle) {
+            this.boundary = x
+            this.capacity = y
         } else {
-            this.boundary = rect
+            this.boundary = new qt_Rectangle(x, y, w, h)
+            this.capacity = n
         }
-        this.capacity = n
-        this.points = []
+        this.boids = []
         this.divided = false
     }
 
-    insert(point) {
-        if (!this.boundary.contains(point)) {
+    insert(boid) {
+        if (!this.boundary.contains(boid)) {
             return false
         }
-        if (this.points.length < this.capacity) {
-            this.points.push(point)
+        if (this.boids.length < this.capacity) {
+            this.boids.push(boid)
             return true
         } else {
             if (!this.divided) {
                 this.subdivide()
             }
-            if (this.northeast.insert(point)) {
+            if (this.northeast.insert(boid)) {
                 return true
-            } else if (this.northwest.insert(point)) {
+            } else if (this.northwest.insert(boid)) {
                 return true
-            } else if (this.southeast.insert(point)) {
+            } else if (this.southeast.insert(boid)) {
                 return true
-            } else if (this.southwest.insert(point)) {
+            } else if (this.southwest.insert(boid)) {
                 return true
             }
         }
@@ -83,9 +83,9 @@ class Quadtree {
         if (!this.boundary.intersects(range)) {
             return
         } else {
-            for (let p of this.points) {
-                if (range.contains(p)) {
-                    found.push(p)
+            for (let b of this.boids) {
+                if (range.contains(b)) {
+                    found.push(b)
                 }
             }
             if (this.divided) {

@@ -1,22 +1,22 @@
 class Food {
-    constructor(x,y) {
-        this.pos = createVector(x,y)
-        this.size = random(1,4)
+    constructor(x, y) {
+        this.pos = createVector(x, y)
+        this.size = random(1, 4)
         this.eaten = false
     }
 
     show() {
-        if ( !this.eaten) {
+        if (!this.eaten) {
             push()
             strokeWeight(10)
-            fill(50,255,0)
+            fill(50, 255, 0)
             point(this.pos.x, this.pos.y)
             pop()
         }
     }
 
     eat() {
-        console.log("A peace of fish!")
+        console.log('🐟: "habba habba"')
         this.eaten = true
     }
 
