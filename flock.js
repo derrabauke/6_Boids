@@ -1,8 +1,9 @@
 class Flock {
     QUADTREE = undefined
+    CAPACITY = 10
 
     constructor(x, y, w, h) {
-        this.boundary = new qt_Rectangle(x, y, w, h, 4)
+        this.boundary = new qt_Rectangle(x, y, w, h)
         this.boids = []
     }
 
@@ -22,7 +23,7 @@ class Flock {
     }
 
     buildTree() {
-        this.QUADTREE = new Quadtree(this.boundary, 4)
+        this.QUADTREE = new Quadtree(this.boundary, this.CAPACITY)
         for (let boid of this.boids) {
             this.QUADTREE.insert(boid)
         }
@@ -32,6 +33,15 @@ class Flock {
         this.buildTree()
         for (let boid of this.boids) {
             boid.run(this.getNeighbours(boid))
+        }
+    }
+
+    drawQuadTree() {
+        if (this.QUADTREE) {
+            push()
+            rectMode(CENTER)
+            this.QUADTREE.show()
+            pop()
         }
     }
 }

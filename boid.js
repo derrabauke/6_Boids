@@ -1,14 +1,14 @@
 class Boid {
 
-    MAXSPEED = 3
-    MAXFORCE = 0.1
+    MAXSPEED = 2
+    MAXFORCE = 0.05
     SEPARATION = 30
     SEPARATION_SQ = sq(this.SEPARATION)
     PERCEPTION = 150
     PERCEPTION_SQ = sq(this.PERCEPTION)
     PERIPHERY = PI / 4
     RADIUS = 3.0
-    BITERANGE = sqrt(this.RADIUS * 2)
+    BITERANGE = sqrt(this.RADIUS * 3)
     NORMALCOLOR = color(50, 50, 50)
     HIGHLIGHTCOLOR = color(0, 255, 0)
 
@@ -18,6 +18,7 @@ class Boid {
         this.velocity.setMag(random(2, 4))
         this.acceleration = p5.Vector.random2D()
         this.col = this.NORMALCOLOR
+        this.included = true
     }
 
     run(flock) {
@@ -29,16 +30,16 @@ class Boid {
 
     update() {
         this.pos.add(this.velocity)
-        this.velocity.limit(this.MAXSPEED)
         this.velocity.add(this.acceleration)
+        this.velocity.limit(this.MAXSPEED)
         this.acceleration.mult(0)
     }
 
     show() {
         const theta = this.velocity.heading() + radians(90)
+        push()
         fill(this.col)
         stroke(200)
-        push()
         translate(this.pos.x, this.pos.y)
         rotate(theta)
         beginShape()
@@ -47,6 +48,7 @@ class Boid {
         vertex(this.RADIUS, this.RADIUS * 2)
         endShape(CLOSE)
         pop()
+        this.unlight()
     }
 
     edges() {
@@ -63,7 +65,54 @@ class Boid {
     flock(boids) {
         this.applyForce(this.align(boids).mult(1.0))
         this.applyForce(this.cohesion(boids).mult(1.0))
-        this.applyForce(this.separate(boids).mult(1.5))
+        this.applyForce(this.separate(boids).mult(1.3))
+        if (avoidLOSB) {
+            this.view(boids)
+            this.applyForce(this.keepLOSclear(boids).mult(1.5))
+        }
+    }
+
+    view(boids) {
+        for (let other of boids) {
+            if (other != this) {
+                let d = this.distsq(this.pos.x, this.pos.y, other.pos.x, other.pos.y)
+                if (d > 0 && d < this.PERCEPTION_SQ) {
+                    let comparison = p5.Vector.sub(other.pos, this.pos)
+                    let diff = this.angleBetween(comparison, this.velocity)
+                    if (diff < this.PERIPHERY) {
+                        other.included = true
+                    }
+                }
+            }
+            other.included = false
+        }
+    }
+
+    keepLOSclear(boids) {
+        let total = 0
+        let steering = createVector()
+        for (let other of boids) {
+            if (other.included && other != this) {
+                const los = this.velocity.normalize().mult(this.PERCEPTION)
+                if (this.pointIsOnLine(this.pos, other.pos, los)) {
+                    let angle = radians(random(15, this.PERIPHERY) * random(-1, 1))
+                    steering.add(p5.Vector.fromAngle(angle))
+                    total++
+                    // break
+                }
+            }
+        }
+        if (total > 0) {
+            steering.div(total)
+            steering.normalize()
+            return this.seek(steering)
+        }
+        return steering
+    }
+
+    pointIsOnLine(p1, p2, heading) {
+        let res = (p1.x - p2.x) * heading.y - (p1.y - p2.y) * heading.x
+        return res < 5
     }
 
     align(boids) {
@@ -179,18 +228,24 @@ class Boid {
         }
     }
 
-    drawView(boids) {
-        const PERCEPTION = 100
-        const PERIPHERY = PI / 4
-
-        for (let other of boids) {
-            let comparison = p5.Vector.sub(other.pos, this.pos)
+    isInView(other) {
+        if (other != this) {
             let d = this.distsq(this.pos.x, this.pos.y, other.pos.x, other.pos.y)
             if (d > 0 && d < this.PERCEPTION_SQ) {
+                let comparison = p5.Vector.sub(other.pos, this.pos)
                 let diff = this.angleBetween(comparison, this.velocity)
-                if (diff < PERIPHERY) {
-                    other.highlight()
+                if (diff < this.PERIPHERY) {
+                    return true
                 }
+            }
+        }
+        return false
+    }
+
+    drawView(boids) {
+        for (let other of boids) {
+            if (this.isInView(other)) {
+                other.highlight()
             }
         }
         const currentHeading = this.velocity.heading()
@@ -199,29 +254,29 @@ class Boid {
         rotate(currentHeading)
         fill(0, 100)
         noStroke()
-        arc(0, 0, PERCEPTION * 2, PERCEPTION * 2, -PERIPHERY, PERIPHERY)
+        arc(0, 0, this.PERCEPTION * 2, this.PERCEPTION * 2, -this.PERIPHERY, this.PERIPHERY)
         pop()
-    }
-
-    angleBetween(v1, v2) {
-        const dot = v1.dot(v2)
-        const theta = Math.acos(dot / (v1.mag() * v2.mag()))
-        return theta
     }
 
     highlight() {
         this.col = this.HIGHLIGHTCOLOR
         this.inView = 250
-        setTimeout(() => this.unlight(), 80)
+        setTimeout(() => this.unlight(), 10)
     }
 
     unlight() {
         if (this.inView < 0) {
             this.col = this.NORMALCOLOR
         } else {
-            this.inView -= 50
-            setTimeout(() => this.unlight(), 100)
+            this.inView -= 126
+            // setTimeout(() => this.unlight(), 10)
         }
+    }
+
+    angleBetween(v1, v2) {
+        const dot = v1.dot(v2)
+        const theta = Math.acos(dot / (v1.mag() * v2.mag()))
+        return theta
     }
 
     /* #### Speed optimizations #### */

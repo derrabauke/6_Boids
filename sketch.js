@@ -1,18 +1,63 @@
 let food = []
 let flock
+let boidCount = 50
+let debugView = false
+let avoidLOSB = false
+let showQuad = false
 
 function setup() {
-    aText = createP("Click to insert some food into the aquarium.");
-    aText.position(width / 4, 10)
+    checkbox = createCheckbox("Debug View", debugView)
+    checkbox.changed(toggleDebug)
+
+    // checkbox_LOSB = createCheckbox("Avoid Line-Of-Sight blocking", avoidLOSB)
+    // checkbox_LOSB.changed(toggleLOSB)
+
+    checkbox_QUAD = createCheckbox("Show Quadtree", showQuad)
+    checkbox_QUAD.changed(toggleQUAD)
+
+    selLabel = createSpan("Boid count: ")
+    sel = createSelect();
+    sel.option("50", 50)
+    sel.option("100", 100)
+    sel.option("250", 250)
+    sel.option("500", 500)
+    sel.option("1000", 1000)
+    sel.changed(countSelection);
+
     createCanvas(innerWidth, innerHeight)
+    // flocking stuff
+    initFlock()
+}
+
+function initFlock() {
     flock = new Flock(0, 0, innerWidth, innerHeight)
-    for (let i = 0; i < 250; i++) {
+    for (let i = 0; i < boidCount; i++) {
         flock.addBoid(new Boid(random(width), random(height)))
     }
 }
 
 function mousePressed() {
     food.push(new Food(mouseX, mouseY))
+}
+
+function toggleDebug() {
+    debugView = !debugView
+}
+
+function toggleLOSB() {
+    avoidLOSB = !avoidLOSB
+}
+
+function toggleQUAD() {
+    showQuad = !showQuad
+}
+
+function countSelection() {
+    const val = sel.value()
+    if (val) {
+        boidCount = val
+        initFlock()
+    }
 }
 
 function draw() {
@@ -27,5 +72,10 @@ function draw() {
     }
 
     flock.run()
-    boids[0].drawView(flock.getNeighbours(boids[0]))
+    if (debugView) {
+        boids[0].drawView(flock.getNeighbours(boids[0]))
+    }
+    if (showQuad) {
+        flock.drawQuadTree()
+    }
 }

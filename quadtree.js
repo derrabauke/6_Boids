@@ -96,4 +96,16 @@ class Quadtree {
             }
         }
     }
+
+    show() {
+        stroke(250)
+        noFill()
+        rect(this.boundary.x, this.boundary.y, this.boundary.w * 2, this.boundary.h * 2)
+        if (this.divided) {
+            this.northwest.show()
+            this.northeast.show()
+            this.southwest.show()
+            this.southeast.show()
+        }
+    }
 }
