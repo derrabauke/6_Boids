@@ -1,4 +1,4 @@
-let fishImage, fishImageGreen, fishImageRed, flock, predator
+let fishImage, fishImageGreen, fishImageRed, predatorFish, flock, predator
 let food = []
 let boidCount = 50
 let debugView = false
@@ -8,6 +8,8 @@ function preload() {
     fishImage = loadImage('assets/fish.png')
     fishImageGreen = loadImage('assets/fish_green.png')
     fishImageRed = loadImage('assets/fish_red.png')
+    predatorFish = loadImage('assets/blueMarlin.png')
+
     backgroundimage = loadImage('assets/background.jpg')
 }
 
@@ -26,6 +28,7 @@ function setup() {
     sel.option("500", 500)
     sel.option("1000", 1000)
     sel.changed(countSelection);
+    predator = new Predator(mouseX, mouseY)
 
     // flocking stuff
     initFlock()
@@ -39,7 +42,11 @@ function initFlock() {
 }
 
 function mousePressed() {
-    food.push(new Food(mouseX, mouseY))
+    if (random(5) > 4) {
+        predator = new Predator(mouseX, mouseY)
+    } else {
+        food.push(new Food(mouseX, mouseY))
+    }
 }
 
 function toggleDebug() {
@@ -69,6 +76,10 @@ function draw() {
     for (let peace of food) {
         peace.update()
         peace.show()
+    }
+    if (predator) {
+        predator.update()
+        predator.show()
     }
     const boids = flock.getAllBoids()
     for (let boid of boids) {

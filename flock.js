@@ -1,6 +1,6 @@
 class Flock {
     QUADTREE = undefined
-    CAPACITY = 10
+    CAPACITY = 20
 
     constructor(x, y, w, h) {
         this.boundary = new qt_Rectangle(x, y, w, h)

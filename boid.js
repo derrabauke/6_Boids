@@ -30,6 +30,9 @@ class Boid {
 
     run(flock) {
         this.flock(flock)
+        if (predator) {
+            this.applyForce(this.flee(predator))
+        }
         this.update()
         this.edges()
         this.show()
@@ -231,13 +234,13 @@ class Boid {
     }
 
     flee(target) {
-        const desired = p5.Vector.sub(target, this.pos)
+        const desired = p5.Vector.sub(target.pos, this.pos)
         const distance = desired.magSq()
         if (distance < 2500) {
             desired.setMag(this.MAXSPEED)
             desired.mult(-1)
             const steer = p5.Vector.sub(desired, this.velocity)
-            steer.limit(this.MAXFORCE)
+            steer.limit(5)
             return steer
         }
         return createVector(0, 0)
@@ -306,7 +309,6 @@ class Boid {
             this.col = this.NORMALCOLOR
         } else {
             this.inView -= 126
-            // setTimeout(() => this.unlight(), 10)
         }
     }
 
