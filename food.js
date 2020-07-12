@@ -1,26 +1,23 @@
 class Food {
-
-    MAXSPEED = 0.5
-
     constructor(x, y) {
         this.pos = createVector(x, y)
-        this.size = random(1, 4)
+        this.size = random(3, 5)
         this.eaten = false
+        this.col = color(random(100, 255), 150, random(0, 100))
     }
 
     update() {
-        this.pos.add(this.velocity)
-        this.velocity.add(this.acceleration)
-        this.velocity.limit(this.MAXSPEED)
-        this.acceleration.mult(0)
+        this.pos.add(0, this.size * 0.15)
+        if (this.pos.y == height) {
+            this.eaten = true
+        }
     }
 
     show() {
         if (!this.eaten) {
             push()
-            strokeWeight(10)
-            // fill(50, 255, 0)
-            stroke(200)
+            strokeWeight(this.size * 2)
+            stroke(this.col)
             point(this.pos.x, this.pos.y)
             pop()
         }

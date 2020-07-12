@@ -19,6 +19,13 @@ class Boid {
         this.acceleration = p5.Vector.random2D()
         this.col = this.NORMALCOLOR
         this.included = true
+        this.weight = random(1, 9)
+        let imgPic = random(3)
+        this.img = imgPic > 1 ? (imgPic > 2 ? fishImageRed : fishImageGreen) : fishImage
+        this.imgDimensions = {
+            w: map(this.weight, 1, 9, 10, 32),
+            h: map(this.weight, 1, 9, 10, 24)
+        }
     }
 
     run(flock) {
@@ -37,24 +44,41 @@ class Boid {
 
     show() {
         const theta = this.velocity.heading() + radians(90)
+        if (debugView) {
+            push()
+            fill(this.col)
+            stroke(200)
+            translate(this.pos.x, this.pos.y)
+            rotate(theta)
+            beginShape()
+            vertex(0, -this.RADIUS * 2)
+            vertex(-this.RADIUS, this.RADIUS * 2)
+            vertex(this.RADIUS, this.RADIUS * 2)
+            endShape(CLOSE)
+            pop()
+            this.unlight()
+        } else {
+            this.rotateAndDrawImage(this.img, this.pos.x, this.pos.y, this.imgDimensions.w, this.imgDimensions.h, theta)
+        }
+    }
+
+    rotateAndDrawImage(img, img_x, img_y, w, h, angle) {
         push()
-        fill(this.col)
-        stroke(200)
-        translate(this.pos.x, this.pos.y)
-        rotate(theta)
-        beginShape()
-        vertex(0, -this.RADIUS * 2)
-        vertex(-this.RADIUS, this.RADIUS * 2)
-        vertex(this.RADIUS, this.RADIUS * 2)
-        endShape(CLOSE)
+        imageMode(CENTER)
+        translate(img_x + w / 2, img_y + h / 2)
+        rotate(angle + (radians(90)))
+        image(img, 0, 0, w, h)
         pop()
-        this.unlight()
     }
 
     edges() {
-        if (this.pos.x < -this.RADIUS) this.pos.x = width + this.RADIUS
+        if (this.pos.x < -this.RADIUS) {
+            this.pos.x = width + this.RADIUS
+        }
+        if (this.pos.x > width + this.RADIUS) {
+            this.pos.x = -this.RADIUS
+        }
         if (this.pos.y < -this.RADIUS) this.pos.y = height + this.RADIUS
-        if (this.pos.x > width + this.RADIUS) this.pos.x = -this.RADIUS
         if (this.pos.y > height + this.RADIUS) this.pos.y = -this.RADIUS
     }
 
@@ -206,6 +230,19 @@ class Boid {
         this.applyForce(steer)
     }
 
+    flee(target) {
+        const desired = p5.Vector.sub(target, this.pos)
+        const distance = desired.magSq()
+        if (distance < 2500) {
+            desired.setMag(this.MAXSPEED)
+            desired.mult(-1)
+            const steer = p5.Vector.sub(desired, this.velocity)
+            steer.limit(this.MAXFORCE)
+            return steer
+        }
+        return createVector(0, 0)
+    }
+
     findFood(food) {
         let distance, target
         for (let peace of food) {
@@ -283,4 +320,5 @@ class Boid {
     distsq(x1, y1, x2, y2) {
         return sq(x1 - x2) + sq(y1 - y2);
     }
+
 }

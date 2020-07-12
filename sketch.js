@@ -1,19 +1,22 @@
+let fishImage, fishImageGreen, fishImageRed, flock, predator
 let food = []
-let flock
 let boidCount = 50
 let debugView = false
 let avoidLOSB = false
-let showQuad = false
+
+function preload() {
+    fishImage = loadImage('assets/fish.png')
+    fishImageGreen = loadImage('assets/fish_green.png')
+    fishImageRed = loadImage('assets/fish_red.png')
+    backgroundimage = loadImage('assets/background.jpg')
+}
 
 function setup() {
+    createCanvas(innerWidth, innerHeight)
+    console.log('Image Credits: "aquarium-3" by www.happybarcelona.eu is licensed under CC BY-NC 2.0')
+
     checkbox = createCheckbox("Debug View", debugView)
     checkbox.changed(toggleDebug)
-
-    // checkbox_LOSB = createCheckbox("Avoid Line-Of-Sight blocking", avoidLOSB)
-    // checkbox_LOSB.changed(toggleLOSB)
-
-    checkbox_QUAD = createCheckbox("Show Quadtree", showQuad)
-    checkbox_QUAD.changed(toggleQUAD)
 
     selLabel = createSpan("Boid count: ")
     sel = createSelect();
@@ -24,7 +27,6 @@ function setup() {
     sel.option("1000", 1000)
     sel.changed(countSelection);
 
-    createCanvas(innerWidth, innerHeight)
     // flocking stuff
     initFlock()
 }
@@ -48,10 +50,6 @@ function toggleLOSB() {
     avoidLOSB = !avoidLOSB
 }
 
-function toggleQUAD() {
-    showQuad = !showQuad
-}
-
 function countSelection() {
     const val = sel.value()
     if (val) {
@@ -61,21 +59,23 @@ function countSelection() {
 }
 
 function draw() {
-    background(51)
+    if (debugView) {
+        background(51)
+        flock.drawQuadTree()
+    } else {
+        image(backgroundimage, 0, 0, width, height)
+    }
     food = food.filter(f => f.fresh())
     for (let peace of food) {
+        peace.update()
         peace.show()
     }
     const boids = flock.getAllBoids()
     for (let boid of boids) {
         boid.findFood(food)
     }
-
     flock.run()
     if (debugView) {
         boids[0].drawView(flock.getNeighbours(boids[0]))
-    }
-    if (showQuad) {
-        flock.drawQuadTree()
     }
 }
